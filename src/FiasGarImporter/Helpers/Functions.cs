@@ -4,7 +4,12 @@
     {
         internal static DateTime GetLastDayOfWeek(params int[] daysOfWeekToSearch)
         {
-            DateTime result = DateTime.Today;
+            return GetLastDayOfWeek(DateTime.Today, daysOfWeekToSearch);
+        }
+
+        internal static DateTime GetLastDayOfWeek(DateTime fromDate, params int[] daysOfWeekToSearch)
+        {
+            DateTime result = fromDate;
             int dow = GetDayOfWeekNum(result);
 
             while (!daysOfWeekToSearch.Contains(dow))

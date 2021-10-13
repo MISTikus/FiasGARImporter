@@ -33,6 +33,29 @@ namespace FiasGarImporter
             return default;
         }
 
+        public IEnumerable<AddressObject> GetDiff(DateTime lastLoad)
+        {
+            IEnumerable<(DateTime fileDate, string url)>? urls = Templates.DownloadDiffUrls(lastLoad);
+            foreach ((DateTime fileDate, string url) url in urls)
+            {
+                downloader.DownloadAsync(url.url, Path.Combine(saveFolder, Templates.GetDiffFileName(url.fileDate)))
+                    .GetAwaiter()
+                    .GetResult();
+            }
+            return default;
+        }
+
+        public async ValueTask<IEnumerable<AddressObject>> GetDiffAsync(DateTime lastLoad)
+        {
+            IEnumerable<(DateTime fileDate, string url)>? urls = Templates.DownloadDiffUrls(lastLoad);
+            foreach ((DateTime fileDate, string url) url in urls)
+            {
+                await downloader.DownloadAsync(url.url, Path.Combine(saveFolder, Templates.GetDiffFileName(url.fileDate)))
+                .ConfigureAwait(false);
+            }
+            return default;
+        }
+
         public void Dispose()
         {
             Dispose(true);
