@@ -16,8 +16,26 @@
 
         public async Task DownloadAsync(string url, string filePath)
         {
-            using HttpResponseMessage? response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
+            using HttpResponseMessage response = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead);
             await DownloadFileFromHttpResponseMessage(response, filePath);
+        }
+
+        public void Download(string url, string filePath)
+        {
+            using AutoResetEvent completedSignal = new(false);
+
+            client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead)
+                .ContinueWith(r =>
+                {
+                    DownloadFileFromHttpResponseMessage(r.Result, filePath)
+                        .ContinueWith(x =>
+                        {
+                            r.Result.Dispose();
+                            completedSignal.Set();
+                        });
+                });
+
+            completedSignal.WaitOne();
         }
 
         private async Task DownloadFileFromHttpResponseMessage(HttpResponseMessage response, string filePath)
@@ -26,7 +44,7 @@
 
             long? totalBytes = response.Content.Headers.ContentLength;
 
-            using Stream? contentStream = await response.Content.ReadAsStreamAsync();
+            using Stream contentStream = await response.Content.ReadAsStreamAsync();
             await ProcessContentStream(totalBytes, contentStream, filePath);
         }
 
@@ -34,10 +52,10 @@
         {
             long totalBytesRead = 0L;
             long readCount = 0L;
-            byte[]? buffer = new byte[8192];
+            byte[] buffer = new byte[8192];
             bool isMoreToRead = true;
 
-            using FileStream? fileStream = new(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
+            using FileStream fileStream = new(filePath, FileMode.Create, FileAccess.Write, FileShare.None, 8192, true);
             do
             {
                 int bytesRead = await contentStream.ReadAsync(buffer);
