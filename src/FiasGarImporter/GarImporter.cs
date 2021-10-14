@@ -38,9 +38,13 @@ namespace FiasGarImporter
             IEnumerable<(DateTime fileDate, string url)>? urls = Templates.DownloadDiffUrls(lastLoad);
             foreach ((DateTime fileDate, string url) url in urls)
             {
-                downloader.DownloadAsync(url.url, Path.Combine(saveFolder, Templates.GetDiffFileName(url.fileDate)))
-                    .GetAwaiter()
-                    .GetResult();
+                string? fileName = Path.Combine(saveFolder, Templates.GetDiffFileName(url.fileDate));
+                if (File.Exists(fileName))
+                {
+                    continue;
+                }
+
+                downloader.Download(url.url, fileName);
             }
             return default;
         }
@@ -50,8 +54,14 @@ namespace FiasGarImporter
             IEnumerable<(DateTime fileDate, string url)>? urls = Templates.DownloadDiffUrls(lastLoad);
             foreach ((DateTime fileDate, string url) url in urls)
             {
-                await downloader.DownloadAsync(url.url, Path.Combine(saveFolder, Templates.GetDiffFileName(url.fileDate)))
-                .ConfigureAwait(false);
+                string? fileName = Path.Combine(saveFolder, Templates.GetDiffFileName(url.fileDate));
+                if (File.Exists(fileName))
+                {
+                    continue;
+                }
+
+                await downloader.DownloadAsync(url.url, fileName)
+                    .ConfigureAwait(false);
             }
             return default;
         }

@@ -85,16 +85,16 @@ namespace IntegrationTests
         }
 
         [Fact]
-        public void Import_FullData_Should_Load_Correctly()
+        public void Import_DiffData_Should_Load_Correctly()
         {
             // Arrange
-            CopyFullDataFile(tempFolder);
+            DateTime lastLoad = DateTime.Today.AddDays(-2);
 
             // Action
-            IEnumerable<AddressObject>? data = importer.GetFull();
+            IEnumerable<AddressObject>? data = importer.GetDiff(lastLoad);
 
             // Assert
-
+            data.Should().NotBeNullOrEmpty();
         }
 
         private void CopyFullDataFile(string folder)
@@ -106,7 +106,7 @@ namespace IntegrationTests
         {
             foreach (string? file in Directory.EnumerateFiles(tempFolder))
             {
-                File.Delete(file);
+                //File.Delete(file);
             }
         }
     }
