@@ -12,6 +12,9 @@ using Xunit;
 
 namespace IntegrationTests
 {
+    /// <summary>
+    /// For manual run only. Files are very large
+    /// </summary>
     public class ImportTests : IDisposable
     {
         private const string tempFolder = "../../../../../temp";
@@ -24,37 +27,56 @@ namespace IntegrationTests
                 Directory.CreateDirectory(tempFolder);
             }
 
-            importer = new GarImporter(tempFolder);
+            importer = new GarImporter(tempFolder, () => new HttpClientWrapper());
             importer.Progress += (s, a) => Trace.WriteLine($"Progress{(a.IsFinished ? " (finished)" : "")}: {a.Percentage}%");
+        }
+
+        [Fact]
+        public async Task GetUrlListAsync_Should_Return_List_Of_Urls()
+        {
+            // Action
+            IEnumerable<GarUrl>? result = await importer.GetUrlListAsync();
+
+            // Assert
+            result.Should().NotBeNullOrEmpty();
+            result.Should().Contain(new GarUrl("https://fias-file.nalog.ru/downloads/2021.10.12/gar_delta_xml.zip", new DateTime(2021, 10, 12), true));
+            result.Should().Contain(new GarUrl("https://fias-file.nalog.ru/downloads/2021.10.12/gar_xml.zip", new DateTime(2021, 10, 12), false));
         }
 
         [Fact]
         public void GetFull_Should_Download_FullFile()
         {
+            // Arrange
+            GarUrl lastFull = importer.GetUrlList().Where(x => !x.IsDelta).OrderByDescending(x => x.Date).First();
+
             // Action
             _ = importer.GetFull();
 
             // Assert
-            File.Exists(Path.Combine(tempFolder, Templates.CurrentDateFullFileName)).Should().BeTrue();
+            File.Exists(Path.Combine(tempFolder, Templates.GetFullFileName(lastFull.Date))).Should().BeTrue();
         }
 
         [Fact]
         public async Task GetFullAsync_Should_Download_FullFile()
         {
+            // Arrange
+            GarUrl lastFull = (await importer.GetUrlListAsync()).Where(x => !x.IsDelta).OrderByDescending(x => x.Date).First();
+
             // Action
             _ = await importer.GetFullAsync();
 
             // Assert
-            File.Exists(Path.Combine(tempFolder, Templates.CurrentDateFullFileName)).Should().BeTrue();
+            File.Exists(Path.Combine(tempFolder, Templates.GetFullFileName(lastFull.Date))).Should().BeTrue();
         }
 
         [Fact]
         public void GetDiff_Should_Download_DiffFile()
         {
             // Arrange
-            DateTime lastLoad = DateTime.Today.AddDays(-2);
-            IEnumerable<string> fileNames = Templates.DownloadDiffUrls(lastLoad)
-                .Select(x => Templates.GetDiffFileName(x.fileDate));
+            DateTime lastLoad = new(2021, 10, 12);
+            IEnumerable<string> fileNames = importer.GetUrlList()
+                .Where(x => x.IsDelta && x.Date > lastLoad)
+                .Select(x => Templates.GetDiffFileName(x.Date));
 
             // Action
             _ = importer.GetDiff(lastLoad);
@@ -70,9 +92,10 @@ namespace IntegrationTests
         public async Task GetDiffAsync_Should_Download_DiffFile()
         {
             // Arrange
-            DateTime lastLoad = DateTime.Today.AddDays(-2);
-            IEnumerable<string> fileNames = Templates.DownloadDiffUrls(lastLoad)
-                .Select(x => Templates.GetDiffFileName(x.fileDate));
+            DateTime lastLoad = new(2021, 10, 12);
+            IEnumerable<string> fileNames = (await importer.GetUrlListAsync())
+                .Where(x => x.IsDelta && x.Date > lastLoad)
+                .Select(x => Templates.GetDiffFileName(x.Date));
 
             // Action
             _ = await importer.GetDiffAsync(lastLoad);
@@ -88,7 +111,7 @@ namespace IntegrationTests
         public void Import_DiffData_Should_Load_Correctly()
         {
             // Arrange
-            DateTime lastLoad = DateTime.Today.AddDays(-2);
+            DateTime lastLoad = new(2021, 10, 12);
 
             // Action
             IEnumerable<AddressObject>? data = importer.GetDiff(lastLoad);

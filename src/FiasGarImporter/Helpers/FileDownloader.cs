@@ -3,15 +3,15 @@
     internal class FileDownloader : IDisposable
     {
         private bool disposedValue;
-        private readonly HttpClient client;
+        private readonly IHttpClient client;
 
         public delegate void ProgressChangedHandler(long? totalFileSize, long totalBytesDownloaded, double progressPercentage);
 
         public event ProgressChangedHandler? ProgressChanged;
 
-        public FileDownloader()
+        public FileDownloader(Func<IHttpClient> clientFactory)
         {
-            client = new HttpClient() { Timeout = TimeSpan.FromDays(1) };
+            client = clientFactory();
         }
 
         public async Task DownloadAsync(string url, string filePath)
@@ -24,9 +24,17 @@
         {
             using AutoResetEvent completedSignal = new(false);
 
-            client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead)
+            Exception? e = null;
+            client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead).AsTask()
                 .ContinueWith(r =>
                 {
+                    if (r.IsFaulted)
+                    {
+                        e = r.Exception;
+                        completedSignal.Set();
+                        return;
+                    }
+
                     DownloadFileFromHttpResponseMessage(r.Result, filePath)
                         .ContinueWith(x =>
                         {
@@ -36,6 +44,10 @@
                 });
 
             completedSignal.WaitOne();
+            if (e is not null)
+            {
+                throw e;
+            }
         }
 
         private async Task DownloadFileFromHttpResponseMessage(HttpResponseMessage response, string filePath)
