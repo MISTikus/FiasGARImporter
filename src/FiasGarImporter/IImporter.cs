@@ -10,6 +10,9 @@ namespace FiasGarImporter
     {
         event EventHandler<ProgressEventArgs>? Progress;
 
+        ValueTask<IEnumerable<GarUrl>> GetUrlListAsync();
+        IEnumerable<GarUrl> GetUrlList();
+
         IEnumerable<AddressObject> GetFull();
         ValueTask<IEnumerable<AddressObject>> GetFullAsync();
 

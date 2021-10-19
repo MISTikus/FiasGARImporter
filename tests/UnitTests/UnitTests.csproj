@@ -25,4 +25,8 @@
     <ProjectReference Include="..\..\src\FiasGarImporter\FiasGarImporter.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Helpers\" />
+  </ItemGroup>
+
 </Project>
