@@ -70,6 +70,32 @@ namespace IntegrationTests
         }
 
         [Fact]
+        public async Task Enumerate_Regions_Should_Return_List_Of_Regions()
+        {
+            // Arrange
+            string? fileName = Path.Combine(tempFolder, "gar_xml_2021-10-26.zip");
+            int regionsNumber = 0;
+            bool hasMissingNumber = false;
+            int previousRegionId = 0;
+
+            // Action
+            foreach (int regionId in importer.EnumerateRegionsInFile(fileName))
+            {
+                regionsNumber++;
+                if (previousRegionId + 1 != regionId)
+                {
+                    hasMissingNumber = true;
+                }
+
+                previousRegionId = regionId;
+            }
+
+            // Assert
+            regionsNumber.Should().BeGreaterThan(0);
+            hasMissingNumber.Should().BeTrue();
+        }
+
+        [Fact]
         public void GetDiff_Should_Download_DiffFile()
         {
             // Arrange

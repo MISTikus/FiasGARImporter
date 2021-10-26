@@ -18,5 +18,6 @@ namespace FiasGarImporter
 
         IEnumerable<AddressObject> GetDiff(DateTime lastLoad);
         ValueTask<IEnumerable<AddressObject>> GetDiffAsync(DateTime lastLoad);
+        IEnumerable<int> EnumerateRegionsInFile(string fileName);
     }
 }
