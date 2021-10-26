@@ -1,6 +1,7 @@
 ﻿using FiasGarImporter.Events;
 using FiasGarImporter.Helpers;
 using FiasGarImporter.Models;
+using System.IO.Compression;
 using System.Text.RegularExpressions;
 
 namespace FiasGarImporter
@@ -108,6 +109,18 @@ namespace FiasGarImporter
             using IHttpClient client = clientFactory();
             string content = client.Get<string>(listUrl);
             return GetUrlsFromPageContent(content);
+        }
+
+        public IEnumerable<int> EnumerateRegionsInFile(string fileName)
+        {
+            using ZipArchive? archive = ZipFile.OpenRead(fileName);
+            foreach (string? folder in archive.Entries.Select(x => Path.GetDirectoryName(x.FullName)).Distinct())
+            {
+                if (int.TryParse(folder, out int regionId))
+                {
+                    yield return regionId;
+                }
+            }
         }
 
         private static IEnumerable<GarUrl> GetUrlsFromPageContent(string content)
